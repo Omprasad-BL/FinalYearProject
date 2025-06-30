@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Nunito } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
-
+import {Toaster} from '@/components/ui/sonner'
 const inter = Nunito({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -18,7 +18,9 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <Toaster/>
+        {children}</body>
     </html>
     </ClerkProvider>
     
