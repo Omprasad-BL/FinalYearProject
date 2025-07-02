@@ -4,11 +4,13 @@ import { Header } from "./header";
 import { UserProgress } from "@/components/user-progress";
 import { title } from "process";
 import {redirect} from 'next/navigation'
-import { getUserProgress } from "@/db/queries";
+import { getUnits, getUserProgress } from "@/db/queries";
+import { Unit } from "./unit";
 
 const LearnPage = async() => {
+  const unitsData=getUnits()
   const userProgressData=getUserProgress()
-  const[userProgress]=await Promise.all([userProgressData])
+  const[userProgress,units]=await Promise.all([userProgressData,unitsData])
 
   if(!userProgress|| !userProgress.activeCourse){
     redirect("/courses")
@@ -26,11 +28,24 @@ const LearnPage = async() => {
       </StickyWrapper>
       <FeedWrapper>
         <Header title={userProgress.activeCourse.title} />
-        <div className="space-y-4">
-          <div className="h-[500px] w-full bg-blue-500" />
-          <div className="h-[500px] w-full bg-blue-500" />
-          <div className="h-[500px] w-full bg-blue-500" />
-        </div>
+       
+          {/* <div className="h-[500px] w-full bg-blue-500" /> */}
+          
+          {units.map((unit)=>(
+            <div key={unit.id} className="mb-10">
+              {/* {JSON.stringify(unit)} */}
+              <Unit
+              id={unit.id}
+              order={unit.order}
+              description={unit.description}
+              title={unit.title}
+              lessons={unit.lessons}
+              activeLesson={undefined}
+              activeLessonPercentage={0}
+              />
+            </div>
+          ))}
+       
       </FeedWrapper>
     </div>
   );
