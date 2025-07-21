@@ -1,10 +1,12 @@
 "use server";
 import db from "@/db/drizzle";
+import { challengeProgress,challenges,userProgress } from "@/db/schema";
 import { getCourseById, getUserProgress } from "@/db/queries";
-import { userProgress } from "@/db/schema";
 import { auth, currentUser } from "@clerk/nextjs";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { error } from "console";
 export const upsertUserProgress = async (courseId: number) => {
   const { userId } = await auth();
   const user = await currentUser();
@@ -18,8 +20,7 @@ export const upsertUserProgress = async (courseId: number) => {
     throw new Error("Course not found");
   }
 
-//   throw new Error("Test")
-
+  //   throw new Error("Test")
 
   //   add once units and lessons added
   //   if (!course.units.length || !course.units[0].lessons.length) {
@@ -48,4 +49,53 @@ export const upsertUserProgress = async (courseId: number) => {
   revalidatePath("/courses");
   revalidatePath("/learn");
   redirect("/learn");
+};
+
+export const reduceHearts = async (challangeId: number) => {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  const currentUserProgress = await getUserProgress();
+  // todo get user subscription
+
+  const challenge=await db.query.challenges.findFirst({
+    where:eq(challenges.id,challangeId)
+  })
+
+  if(!challenge){
+    throw new Error("Challenge not found");
+  }
+
+  const lessonId=challenge.lessonId;
+  const existingChallengeProgress = await db.query.challengeProgress.findFirst({
+    where: and(eq(challengeProgress.userId,userId), eq(challengeProgress.challengeId,challangeId)),
+  });
+
+  const isPractice=!!existingChallengeProgress;
+  if(isPractice){
+    return {error:"practice"}
+  }
+
+  if(!currentUserProgress){
+    throw new Error("User progress not found ")
+  }
+
+  if(currentUserProgress.hearts===0){
+    return {error:"hearts"};
+  }
+
+  await db.update(userProgress).set({
+    hearts:Math.max(currentUserProgress.hearts-1,0),
+  }).where(eq(userProgress.userId,userId));
+
+  revalidatePath("/shop")
+  revalidatePath("/learn")
+  revalidatePath("/quests")
+  revalidatePath("/leaderboard")
+  revalidatePath(`/lesson/${lessonId}`)
+
+  
+
 };
